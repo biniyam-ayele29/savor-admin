@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import EmployeeSelector from '../components/EmployeeSelector';
-import { ShoppingBag, Loader2, Clock, CheckCircle2, MapPin, Building2 } from 'lucide-react';
+import { ShoppingBag, Loader2, Clock, CheckCircle2, MapPin, Building2, Filter, X, ChevronDown, User } from 'lucide-react';
 
 interface Order {
     id: string;
@@ -9,9 +8,21 @@ interface Order {
     status: string;
     status_description: string | null;
     floor_number: number;
-    company_id: string;
-    employee_id: string;
+    company_id: string | null;
+    employee_id: string | null;
     created_at: string;
+    updated_at: string;
+}
+
+interface Company {
+    id: string;
+    name: string;
+}
+
+interface Employee {
+    id: string;
+    name: string;
+    company_id: string;
 }
 
 const Orders = () => {
@@ -19,6 +30,12 @@ const Orders = () => {
     const [loading, setLoading] = useState(true);
     const [companies, setCompanies] = useState<Record<string, string>>({});
     const [employees, setEmployees] = useState<Record<string, string>>({});
+    const [companyList, setCompanyList] = useState<Company[]>([]);
+    const [employeeList, setEmployeeList] = useState<Employee[]>([]);
+    
+    // Filter state
+    const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
+    const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
 
     useEffect(() => {
         fetchOrders();
@@ -44,8 +61,8 @@ const Orders = () => {
 
     const fetchSupportData = async () => {
         try {
-            const { data: compData } = await supabase.from('companies').select('id, name');
-            const { data: empData } = await supabase.from('employees').select('id, name');
+            const { data: compData } = await supabase.from('companies').select('id, name').order('name');
+            const { data: empData } = await supabase.from('employees').select('id, name, company_id').order('name');
 
             const compMap: Record<string, string> = {};
             compData?.forEach(c => compMap[c.id] = c.name);
@@ -55,27 +72,62 @@ const Orders = () => {
 
             setCompanies(compMap);
             setEmployees(empMap);
+            setCompanyList(compData || []);
+            setEmployeeList(empData || []);
         } catch (error) {
             console.error('Error fetching support data:', error);
         }
     };
 
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'pending_confirmation': return '#f59e0b';
-            case 'Being Prepared': return '#3b82f6';
-            case 'Ready for pickup': return '#fbbf24';
-            case 'Out for delivery': return '#8b5cf6';
-            case 'Delivered/completed': return '#10b981';
-            // Legacy support
-            case 'Confirmed': return '#f59e0b';
-            case 'Being Prepared/Cooking': return '#3b82f6';
-            case 'Ready for Pickup': return '#fbbf24';
-            case 'Out for Delivery/Picked Up': return '#8b5cf6';
-            case 'Delivered/Completed': return '#10b981';
-            case 'pending': return '#f59e0b';
-            default: return 'var(--text-muted)';
+    // Get filtered employees based on selected company
+    const filteredEmployees = selectedCompanyId 
+        ? employeeList.filter(emp => emp.company_id === selectedCompanyId)
+        : employeeList;
+
+    // Filter orders based on selected company and employee
+    const filteredOrders = orders.filter(order => {
+        if (selectedCompanyId && order.company_id !== selectedCompanyId) return false;
+        if (selectedEmployeeId && order.employee_id !== selectedEmployeeId) return false;
+        return true;
+    });
+
+    // Clear employee selection when company changes
+    const handleCompanyChange = (companyId: string) => {
+        setSelectedCompanyId(companyId);
+        setSelectedEmployeeId(''); // Reset employee when company changes
+    };
+
+    const clearFilters = () => {
+        setSelectedCompanyId('');
+        setSelectedEmployeeId('');
+    };
+
+    const getStatusColor = (status: string): { bg: string; text: string } => {
+        switch (status.toLowerCase()) {
+            case 'pending_confirmation':
+            case 'pending':
+            case 'confirmed':
+                return { bg: '#fef3c7', text: '#92400e' }; // Amber - high contrast
+            case 'being prepared':
+            case 'being prepared/cooking':
+                return { bg: '#dbeafe', text: '#1e40af' }; // Blue - high contrast
+            case 'ready for pickup':
+                return { bg: '#fef9c3', text: '#854d0e' }; // Yellow - high contrast
+            case 'out for delivery':
+            case 'out for delivery/picked up':
+                return { bg: '#ede9fe', text: '#5b21b6' }; // Purple - high contrast
+            case 'delivered/completed':
+            case 'delivered':
+                return { bg: '#d1fae5', text: '#065f46' }; // Green - high contrast
+            default:
+                return { bg: '#f3f4f6', text: '#374151' }; // Gray - high contrast
         }
+    };
+
+    // Check if order is in a completed/delivered state
+    const isDelivered = (status: string) => {
+        const normalizedStatus = status.toLowerCase();
+        return normalizedStatus === 'delivered' || normalizedStatus === 'delivered/completed';
     };
 
     const statusOptions = [
@@ -83,7 +135,7 @@ const Orders = () => {
         'Being Prepared',
         'Ready for pickup',
         'Out for delivery',
-        'Delivered/completed'
+        'delivered'
     ];
 
     const handleUpdateStatus = async (orderId: string, newStatus: string) => {
@@ -112,28 +164,123 @@ const Orders = () => {
                 </div>
             </header>
 
+            {/* Filter Section */}
             <div className="card" style={{ marginBottom: '2rem', padding: '1.5rem' }}>
-                <h3 style={{ marginBottom: '1rem', fontSize: '1rem' }}>Active Order Flow Test</h3>
-                <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem', fontSize: '0.875rem' }}>
-                    Test the grouped employee selector below. This component demonstrates the relation between companies and their staff.
-                </p>
-                <div style={{ maxWidth: '400px' }}>
-                    <EmployeeSelector onSelect={(empId, compId) => console.log('Selected:', { empId, compId })} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+                    <Filter size={18} color="var(--primary)" />
+                    <h3 style={{ fontSize: '1rem', margin: 0 }}>Filter Orders</h3>
+                    {(selectedCompanyId || selectedEmployeeId) && (
+                        <button
+                            onClick={clearFilters}
+                            style={{
+                                marginLeft: 'auto',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.375rem',
+                                padding: '0.375rem 0.75rem',
+                                fontSize: '0.75rem',
+                                color: '#dc2626',
+                                backgroundColor: '#fef2f2',
+                                border: '1px solid #fecaca',
+                                borderRadius: 'var(--radius-md)',
+                                cursor: 'pointer',
+                                fontWeight: 500
+                            }}
+                        >
+                            <X size={14} /> Clear Filters
+                        </button>
+                    )}
                 </div>
+                <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                    {/* Company Selector */}
+                    <div style={{ flex: '1', minWidth: '200px', position: 'relative' }}>
+                        <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 500, color: 'var(--text-muted)', marginBottom: '0.375rem' }}>
+                            Company
+                        </label>
+                        <div style={{ position: 'relative' }}>
+                            <Building2 style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--primary)' }} size={18} />
+                            <select
+                                value={selectedCompanyId}
+                                onChange={(e) => handleCompanyChange(e.target.value)}
+                                style={{
+                                    width: '100%',
+                                    padding: '0.625rem 2.5rem 0.625rem 2.5rem',
+                                    fontSize: '0.875rem',
+                                    border: '1px solid var(--border)',
+                                    borderRadius: 'var(--radius-md)',
+                                    backgroundColor: 'var(--bg-card)',
+                                    color: 'var(--text-main)',
+                                    cursor: 'pointer',
+                                    appearance: 'none'
+                                }}
+                            >
+                                <option value="">All Companies</option>
+                                {companyList.map(company => (
+                                    <option key={company.id} value={company.id}>
+                                        {company.name}
+                                    </option>
+                                ))}
+                            </select>
+                            <ChevronDown style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} size={18} />
+                        </div>
+                    </div>
+
+                    {/* Employee Selector */}
+                    <div style={{ flex: '1', minWidth: '200px', position: 'relative' }}>
+                        <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 500, color: 'var(--text-muted)', marginBottom: '0.375rem' }}>
+                            Employee
+                        </label>
+                        <div style={{ position: 'relative' }}>
+                            <User style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--primary)' }} size={18} />
+                            <select
+                                value={selectedEmployeeId}
+                                onChange={(e) => setSelectedEmployeeId(e.target.value)}
+                                style={{
+                                    width: '100%',
+                                    padding: '0.625rem 2.5rem 0.625rem 2.5rem',
+                                    fontSize: '0.875rem',
+                                    border: '1px solid var(--border)',
+                                    borderRadius: 'var(--radius-md)',
+                                    backgroundColor: 'var(--bg-card)',
+                                    color: 'var(--text-main)',
+                                    cursor: 'pointer',
+                                    appearance: 'none'
+                                }}
+                            >
+                                <option value="">All Employees</option>
+                                {filteredEmployees.map(employee => (
+                                    <option key={employee.id} value={employee.id}>
+                                        {employee.name}
+                                    </option>
+                                ))}
+                            </select>
+                            <ChevronDown style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} size={18} />
+                        </div>
+                    </div>
+                </div>
+                {(selectedCompanyId || selectedEmployeeId) && (
+                    <div style={{ marginTop: '1rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>
+                        Showing {filteredOrders.length} of {orders.length} orders
+                    </div>
+                )}
             </div>
 
             {loading ? (
                 <div style={{ textAlign: 'center', padding: '3rem' }}>
                     <Loader2 className="animate-spin" style={{ margin: '0 auto', color: 'var(--primary)' }} size={32} />
                 </div>
-            ) : orders.length === 0 ? (
+            ) : filteredOrders.length === 0 ? (
                 <div className="card" style={{ textAlign: 'center', padding: '4rem' }}>
                     <ShoppingBag size={48} style={{ margin: '0 auto 1.5rem', color: 'var(--text-muted)', opacity: 0.5 }} />
-                    <p style={{ color: 'var(--text-muted)' }}>No orders found.</p>
+                    <p style={{ color: 'var(--text-muted)' }}>
+                        {orders.length === 0 ? 'No orders found.' : 'No orders match the selected filters.'}
+                    </p>
                 </div>
             ) : (
                 <div className="grid-list">
-                    {orders.map(order => (
+                    {filteredOrders.map(order => {
+                        const statusColors = getStatusColor(order.status);
+                        return (
                         <div key={order.id} className="card">
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '1rem' }}>
                                 <div>
@@ -143,8 +290,8 @@ const Orders = () => {
                                     <h3 style={{ fontSize: '1.125rem' }}>Order #{order.id.slice(0, 8)}</h3>
                                 </div>
                                 <span style={{
-                                    backgroundColor: `${getStatusColor(order.status)}1a`,
-                                    color: getStatusColor(order.status),
+                                    backgroundColor: statusColors.bg,
+                                    color: statusColors.text,
                                     padding: '0.25rem 0.75rem',
                                     borderRadius: '9999px',
                                     fontSize: '0.75rem',
@@ -156,17 +303,17 @@ const Orders = () => {
                             </div>
 
                             <div style={{ marginBottom: '1.5rem' }}>
-                                <p style={{ fontSize: '0.875rem', color: 'var(--text-sub)', fontStyle: 'italic', borderLeft: `3px solid ${getStatusColor(order.status)}`, paddingLeft: '0.75rem' }}>
+                                <p style={{ fontSize: '0.875rem', color: 'var(--text-sub)', fontStyle: 'italic', borderLeft: `3px solid ${statusColors.text}`, paddingLeft: '0.75rem' }}>
                                     {order.status_description || 'Track your order progress here.'}
                                 </p>
                             </div>
 
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', borderTop: '1px solid var(--border)', paddingTop: '1rem' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.875rem' }}>
-                                    <Building2 size={16} color="var(--primary)" /> {companies[order.company_id] || 'Unknown Company'}
+                                    <Building2 size={16} color="var(--primary)" /> {order.company_id ? (companies[order.company_id] || 'Unknown Company') : 'No Company'}
                                 </div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.875rem' }}>
-                                    <ShoppingBag size={16} color="var(--text-muted)" /> {employees[order.employee_id] || 'Anonymous'}
+                                    <ShoppingBag size={16} color="var(--text-muted)" /> {order.employee_id ? (employees[order.employee_id] || 'Unknown Employee') : 'Guest Order'}
                                 </div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.875rem' }}>
                                     <MapPin size={16} color="var(--text-muted)" /> Floor {order.floor_number}
@@ -177,7 +324,7 @@ const Orders = () => {
                                 <div style={{ fontSize: '1.25rem', fontWeight: 700 }}>
                                     ETB {order.total_price.toFixed(2)}
                                 </div>
-                                {order.status === 'Delivered/completed' ? (
+                                {isDelivered(order.status) ? (
                                     <CheckCircle2 size={24} color="#10b981" />
                                 ) : (
                                     <select
@@ -204,7 +351,8 @@ const Orders = () => {
                                 )}
                             </div>
                         </div>
-                    ))}
+                        );
+                    })}
                 </div>
             )}
         </div>

@@ -28,7 +28,7 @@ const Companies = () => {
     const [editingId, setEditingId] = useState<string | null>(null);
     const [formData, setFormData] = useState({
         name: '',
-        floor_number: 1,
+        floor_number: 0,
         contact_email: '',
         contact_phone: '',
         logo_url: '',
@@ -42,6 +42,11 @@ const Companies = () => {
     const [loadingAdmins, setLoadingAdmins] = useState(false);
     const [creatingAdmin, setCreatingAdmin] = useState(false);
     const [adminFormData, setAdminFormData] = useState({ email: '', password: '' });
+
+    // Delete Confirmation State
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [companyToDelete, setCompanyToDelete] = useState<Company | null>(null);
+    const [deleting, setDeleting] = useState(false);
 
     useEffect(() => {
         fetchCompanies();
@@ -122,7 +127,7 @@ const Companies = () => {
     const resetForm = () => {
         setFormData({
             name: '',
-            floor_number: 1,
+            floor_number: 0,
             contact_email: '',
             contact_phone: '',
             logo_url: '',
@@ -164,30 +169,42 @@ const Companies = () => {
             await fetchCompanies();
             setShowModal(false);
             resetForm();
-        } catch (error) {
-            alert('Error saving company: ' + (error as any).message);
+        } catch (error: any) {
+            alert('Error saving company: ' + error.message);
         } finally {
             setSaving(false);
         }
     };
 
-    const handleDelete = async (id: string, name: string) => {
-        if (!confirm(`Are you sure you want to delete ${name}? This will also delete all employees and orders associated with this company.`)) return;
+    const handleDeleteClick = (company: Company) => {
+        setCompanyToDelete(company);
+        setShowDeleteModal(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!companyToDelete) return;
 
         try {
-            setLoading(true);
+            setDeleting(true);
             const { error } = await supabase
                 .from('companies')
                 .delete()
-                .eq('id', id);
+                .eq('id', companyToDelete.id);
 
             if (error) throw error;
             await fetchCompanies();
+            setShowDeleteModal(false);
+            setCompanyToDelete(null);
         } catch (error) {
             alert('Error deleting company: ' + (error as any).message);
         } finally {
-            setLoading(false);
+            setDeleting(false);
         }
+    };
+
+    const handleCancelDelete = () => {
+        setShowDeleteModal(false);
+        setCompanyToDelete(null);
     };
 
     const filteredCompanies = companies.filter(c =>
@@ -249,7 +266,7 @@ const Companies = () => {
                                     <Edit2 size={16} />
                                 </button>
                                 <button
-                                    onClick={() => handleDelete(company.id, company.name)}
+                                    onClick={() => handleDeleteClick(company)}
                                     className="btn-secondary"
                                     style={{ padding: '0.4rem', border: 'none', background: 'rgba(255,255,255,0.05)', color: '#ef4444' }}
                                     title="Delete"
@@ -333,7 +350,19 @@ const Companies = () => {
 
                             <div>
                                 <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500 }}>Floor Number</label>
-                                <input required type="number" value={formData.floor_number} onChange={e => setFormData({ ...formData, floor_number: parseInt(e.target.value) })} placeholder="1" />
+                                <input 
+                                    required 
+                                    type="number" 
+                                    min={0}
+                                    value={formData.floor_number} 
+                                    onChange={e => {
+                                        const value = parseInt(e.target.value);
+                                        if (!isNaN(value)) {
+                                            setFormData({ ...formData, floor_number: value });
+                                        }
+                                    }} 
+                                    placeholder="1" 
+                                />
                             </div>
 
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
@@ -456,6 +485,99 @@ const Companies = () => {
                                     </button>
                                 </form>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {showDeleteModal && companyToDelete && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+                    backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    backdropFilter: 'blur(4px)', zIndex: 1001
+                }}>
+                    <div className="card" style={{ width: '100%', maxWidth: '450px', padding: '2rem', position: 'relative', textAlign: 'center' }}>
+                        <div style={{
+                            width: '64px',
+                            height: '64px',
+                            borderRadius: '50%',
+                            backgroundColor: '#fef2f2',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            margin: '0 auto 1.5rem'
+                        }}>
+                            <Trash2 size={32} color="#dc2626" />
+                        </div>
+
+                        <h2 style={{ fontSize: '1.25rem', marginBottom: '0.75rem', color: 'var(--text-main)' }}>
+                            Delete Company?
+                        </h2>
+
+                        <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
+                            Are you sure you want to delete <strong style={{ color: 'var(--text-main)' }}>{companyToDelete.name}</strong>?
+                        </p>
+
+                        <p style={{ 
+                            color: '#dc2626', 
+                            fontSize: '0.8rem', 
+                            marginBottom: '1.5rem',
+                            padding: '0.75rem',
+                            backgroundColor: '#fef2f2',
+                            borderRadius: 'var(--radius-md)',
+                            border: '1px solid #fecaca'
+                        }}>
+                            This action cannot be undone. All employees and orders associated with this company will also be deleted.
+                        </p>
+
+                        <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
+                            <button
+                                onClick={handleCancelDelete}
+                                disabled={deleting}
+                                style={{
+                                    padding: '0.625rem 1.5rem',
+                                    fontSize: '0.875rem',
+                                    fontWeight: 500,
+                                    border: '1px solid var(--border)',
+                                    borderRadius: 'var(--radius-md)',
+                                    backgroundColor: 'var(--bg-card)',
+                                    color: 'var(--text-main)',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleConfirmDelete}
+                                disabled={deleting}
+                                style={{
+                                    padding: '0.625rem 1.5rem',
+                                    fontSize: '0.875rem',
+                                    fontWeight: 500,
+                                    border: 'none',
+                                    borderRadius: 'var(--radius-md)',
+                                    backgroundColor: '#dc2626',
+                                    color: 'white',
+                                    cursor: deleting ? 'not-allowed' : 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.5rem',
+                                    opacity: deleting ? 0.7 : 1
+                                }}
+                            >
+                                {deleting ? (
+                                    <>
+                                        <Loader2 className="animate-spin" size={16} />
+                                        Deleting...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Trash2 size={16} />
+                                        Yes, Delete
+                                    </>
+                                )}
+                            </button>
                         </div>
                     </div>
                 </div>
