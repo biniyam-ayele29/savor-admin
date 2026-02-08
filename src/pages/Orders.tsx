@@ -10,6 +10,7 @@ interface Order {
     floor_number: number;
     company_id: string | null;
     employee_id: string | null;
+    waiting_staff_id: string | null;
     created_at: string;
     updated_at: string;
 }
@@ -18,24 +19,21 @@ interface Company {
     id: string;
     name: string;
 }
-
-interface Employee {
+interface WaitingStaff {
     id: string;
     name: string;
-    company_id: string;
 }
 
 const Orders = () => {
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
     const [companies, setCompanies] = useState<Record<string, string>>({});
-    const [employees, setEmployees] = useState<Record<string, string>>({});
     const [companyList, setCompanyList] = useState<Company[]>([]);
-    const [employeeList, setEmployeeList] = useState<Employee[]>([]);
-    
+    const [waitingStaffList, setWaitingStaffList] = useState<WaitingStaff[]>([]);
+
     // Filter state
     const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
-    const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
+    const [selectedStaffId, setSelectedStaffId] = useState<string>('');
 
     useEffect(() => {
         fetchOrders();
@@ -62,44 +60,38 @@ const Orders = () => {
     const fetchSupportData = async () => {
         try {
             const { data: compData } = await supabase.from('companies').select('id, name').order('name');
-            const { data: empData } = await supabase.from('employees').select('id, name, company_id').order('name');
+            const { data: waitData } = await supabase.from('waiting_staff').select('id, name').order('name');
 
             const compMap: Record<string, string> = {};
             compData?.forEach(c => compMap[c.id] = c.name);
 
-            const empMap: Record<string, string> = {};
-            empData?.forEach(e => empMap[e.id] = e.name);
-
             setCompanies(compMap);
-            setEmployees(empMap);
             setCompanyList(compData || []);
-            setEmployeeList(empData || []);
+            setWaitingStaffList(waitData || []);
         } catch (error) {
             console.error('Error fetching support data:', error);
         }
     };
 
-    // Get filtered employees based on selected company
-    const filteredEmployees = selectedCompanyId 
-        ? employeeList.filter(emp => emp.company_id === selectedCompanyId)
-        : employeeList;
+    // All waiting staff are global
+    const filteredStaff = waitingStaffList;
 
-    // Filter orders based on selected company and employee
+    // Filter orders based on selected company and staff
     const filteredOrders = orders.filter(order => {
         if (selectedCompanyId && order.company_id !== selectedCompanyId) return false;
-        if (selectedEmployeeId && order.employee_id !== selectedEmployeeId) return false;
+        if (selectedStaffId && order.waiting_staff_id !== selectedStaffId) return false;
         return true;
     });
 
-    // Clear employee selection when company changes
+    // Clear selection when company changes
     const handleCompanyChange = (companyId: string) => {
         setSelectedCompanyId(companyId);
-        setSelectedEmployeeId(''); // Reset employee when company changes
+        setSelectedStaffId('');
     };
 
     const clearFilters = () => {
         setSelectedCompanyId('');
-        setSelectedEmployeeId('');
+        setSelectedStaffId('');
     };
 
     const getStatusColor = (status: string): { bg: string; text: string } => {
@@ -107,20 +99,20 @@ const Orders = () => {
             case 'pending_confirmation':
             case 'pending':
             case 'confirmed':
-                return { bg: '#fef3c7', text: '#92400e' }; // Amber - high contrast
+                return { bg: '#fef3c7', text: '#92400e' }; // Amber
             case 'being prepared':
             case 'being prepared/cooking':
-                return { bg: '#dbeafe', text: '#1e40af' }; // Blue - high contrast
+                return { bg: '#dbeafe', text: '#1e40af' }; // Blue
             case 'ready for pickup':
-                return { bg: '#fef9c3', text: '#854d0e' }; // Yellow - high contrast
+                return { bg: '#fef9c3', text: '#854d0e' }; // Yellow
             case 'out for delivery':
             case 'out for delivery/picked up':
-                return { bg: '#ede9fe', text: '#5b21b6' }; // Purple - high contrast
+                return { bg: '#ede9fe', text: '#5b21b6' }; // Purple
             case 'delivered/completed':
             case 'delivered':
-                return { bg: '#d1fae5', text: '#065f46' }; // Green - high contrast
+                return { bg: '#d1fae5', text: '#065f46' }; // Green
             default:
-                return { bg: '#f3f4f6', text: '#374151' }; // Gray - high contrast
+                return { bg: '#f3f4f6', text: '#374151' }; // Gray
         }
     };
 
@@ -146,8 +138,6 @@ const Orders = () => {
                 .eq('id', orderId);
 
             if (error) throw error;
-
-            // Refresh orders to show updated status and description
             await fetchOrders();
         } catch (error) {
             console.error('Error updating order status:', error);
@@ -169,7 +159,7 @@ const Orders = () => {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
                     <Filter size={18} color="var(--primary)" />
                     <h3 style={{ fontSize: '1rem', margin: 0 }}>Filter Orders</h3>
-                    {(selectedCompanyId || selectedEmployeeId) && (
+                    {(selectedCompanyId || selectedStaffId) && (
                         <button
                             onClick={clearFilters}
                             style={{
@@ -225,16 +215,16 @@ const Orders = () => {
                         </div>
                     </div>
 
-                    {/* Employee Selector */}
+                    {/* Waiting Staff Selector */}
                     <div style={{ flex: '1', minWidth: '200px', position: 'relative' }}>
                         <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 500, color: 'var(--text-muted)', marginBottom: '0.375rem' }}>
-                            Employee
+                            Waiting Staff
                         </label>
                         <div style={{ position: 'relative' }}>
                             <User style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--primary)' }} size={18} />
                             <select
-                                value={selectedEmployeeId}
-                                onChange={(e) => setSelectedEmployeeId(e.target.value)}
+                                value={selectedStaffId}
+                                onChange={(e) => setSelectedStaffId(e.target.value)}
                                 style={{
                                     width: '100%',
                                     padding: '0.625rem 2.5rem 0.625rem 2.5rem',
@@ -247,10 +237,10 @@ const Orders = () => {
                                     appearance: 'none'
                                 }}
                             >
-                                <option value="">All Employees</option>
-                                {filteredEmployees.map(employee => (
-                                    <option key={employee.id} value={employee.id}>
-                                        {employee.name}
+                                <option value="">All Staff</option>
+                                {filteredStaff.map(s => (
+                                    <option key={s.id} value={s.id}>
+                                        {s.name}
                                     </option>
                                 ))}
                             </select>
@@ -258,7 +248,7 @@ const Orders = () => {
                         </div>
                     </div>
                 </div>
-                {(selectedCompanyId || selectedEmployeeId) && (
+                {(selectedCompanyId || selectedStaffId) && (
                     <div style={{ marginTop: '1rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>
                         Showing {filteredOrders.length} of {orders.length} orders
                     </div>
@@ -281,76 +271,120 @@ const Orders = () => {
                     {filteredOrders.map(order => {
                         const statusColors = getStatusColor(order.status);
                         return (
-                        <div key={order.id} className="card">
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '1rem' }}>
-                                <div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', fontSize: '0.75rem', marginBottom: '0.25rem' }}>
-                                        <Clock size={12} /> {new Date(order.created_at).toLocaleString()}
+                            <div key={order.id} className="card">
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '1rem' }}>
+                                    <div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', fontSize: '0.75rem', marginBottom: '0.25rem' }}>
+                                            <Clock size={12} /> {new Date(order.created_at).toLocaleString()}
+                                        </div>
+                                        <h3 style={{ fontSize: '1.125rem' }}>Order #{order.id.slice(0, 8)}</h3>
                                     </div>
-                                    <h3 style={{ fontSize: '1.125rem' }}>Order #{order.id.slice(0, 8)}</h3>
+                                    <span style={{
+                                        backgroundColor: statusColors.bg,
+                                        color: statusColors.text,
+                                        padding: '0.25rem 0.75rem',
+                                        borderRadius: '9999px',
+                                        fontSize: '0.75rem',
+                                        fontWeight: 600,
+                                        textTransform: 'capitalize'
+                                    }}>
+                                        {order.status}
+                                    </span>
                                 </div>
-                                <span style={{
-                                    backgroundColor: statusColors.bg,
-                                    color: statusColors.text,
-                                    padding: '0.25rem 0.75rem',
-                                    borderRadius: '9999px',
-                                    fontSize: '0.75rem',
-                                    fontWeight: 600,
-                                    textTransform: 'capitalize'
-                                }}>
-                                    {order.status}
-                                </span>
-                            </div>
 
-                            <div style={{ marginBottom: '1.5rem' }}>
-                                <p style={{ fontSize: '0.875rem', color: 'var(--text-sub)', fontStyle: 'italic', borderLeft: `3px solid ${statusColors.text}`, paddingLeft: '0.75rem' }}>
-                                    {order.status_description || 'Track your order progress here.'}
-                                </p>
-                            </div>
+                                <div style={{ marginBottom: '1.5rem' }}>
+                                    <p style={{ fontSize: '0.875rem', color: 'var(--text-sub)', fontStyle: 'italic', borderLeft: `3px solid ${statusColors.text}`, paddingLeft: '0.75rem' }}>
+                                        {order.status_description || 'Track your order progress here.'}
+                                    </p>
+                                </div>
 
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', borderTop: '1px solid var(--border)', paddingTop: '1rem' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.875rem' }}>
-                                    <Building2 size={16} color="var(--primary)" /> {order.company_id ? (companies[order.company_id] || 'Unknown Company') : 'No Company'}
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.875rem' }}>
-                                    <ShoppingBag size={16} color="var(--text-muted)" /> {order.employee_id ? (employees[order.employee_id] || 'Unknown Employee') : 'Guest Order'}
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.875rem' }}>
-                                    <MapPin size={16} color="var(--text-muted)" /> Floor {order.floor_number}
-                                </div>
-                            </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', borderTop: '1px solid var(--border)', paddingTop: '1rem' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.875rem' }}>
+                                        <Building2 size={16} color="var(--primary)" /> {order.company_id ? (companies[order.company_id] || 'Unknown Company') : 'No Company'}
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.875rem' }}>
+                                        <ShoppingBag size={16} color="var(--text-muted)" />
+                                        <select
+                                            value={order.waiting_staff_id || ''}
+                                            onChange={(e) => {
+                                                const newStaffId = e.target.value === '' ? null : e.target.value;
+                                                // Only update if the value actually changed
+                                                if (order.waiting_staff_id !== newStaffId) {
+                                                    const performUpdate = async () => {
+                                                        try {
+                                                            const { error } = await supabase
+                                                                .from('orders')
+                                                                .update({ waiting_staff_id: newStaffId })
+                                                                .eq('id', order.id);
 
-                            <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div style={{ fontSize: '1.25rem', fontWeight: 700 }}>
-                                    ETB {order.total_price.toFixed(2)}
+                                                            if (error) throw error;
+                                                            await fetchOrders(); // Refresh
+                                                        } catch (error) {
+                                                            console.error('Error assigning staff:', error);
+                                                            alert('Failed to assign staff. Please try again.');
+                                                        }
+                                                    };
+                                                    performUpdate();
+                                                }
+                                            }}
+                                            style={{
+                                                padding: '0.25rem 0.5rem',
+                                                fontSize: '0.875rem',
+                                                border: '1px solid var(--border)',
+                                                borderRadius: 'var(--radius-md)',
+                                                backgroundColor: 'var(--bg-card)',
+                                                color: 'var(--text-main)',
+                                                cursor: 'pointer',
+                                                maxWidth: '200px'
+                                            }}
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
+                                            <option value="">Unassigned</option>
+                                            {waitingStaffList
+                                                .map(s => (
+                                                    <option key={s.id} value={s.id}>
+                                                        {s.name}
+                                                    </option>
+                                                ))
+                                            }
+                                        </select>
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.875rem' }}>
+                                        <MapPin size={16} color="var(--text-muted)" /> Floor {order.floor_number}
+                                    </div>
                                 </div>
-                                {isDelivered(order.status) ? (
-                                    <CheckCircle2 size={24} color="#10b981" />
-                                ) : (
-                                    <select
-                                        value={order.status}
-                                        onChange={(e) => handleUpdateStatus(order.id, e.target.value)}
-                                        style={{
-                                            fontSize: '0.875rem',
-                                            padding: '0.5rem 1rem',
-                                            backgroundColor: 'var(--primary)',
-                                            color: 'white',
-                                            border: 'none',
-                                            borderRadius: 'var(--radius-md)',
-                                            fontWeight: 500,
-                                            cursor: 'pointer',
-                                            minWidth: '180px'
-                                        }}
-                                    >
-                                        {statusOptions.map(status => (
-                                            <option key={status} value={status} style={{ backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }}>
-                                                {status}
-                                            </option>
-                                        ))}
-                                    </select>
-                                )}
+
+                                <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div style={{ fontSize: '1.25rem', fontWeight: 700 }}>
+                                        ETB {order.total_price.toFixed(2)}
+                                    </div>
+                                    {isDelivered(order.status) ? (
+                                        <CheckCircle2 size={24} color="#10b981" />
+                                    ) : (
+                                        <select
+                                            value={order.status}
+                                            onChange={(e) => handleUpdateStatus(order.id, e.target.value)}
+                                            style={{
+                                                fontSize: '0.875rem',
+                                                padding: '0.5rem 1rem',
+                                                backgroundColor: 'var(--primary)',
+                                                color: 'white',
+                                                border: 'none',
+                                                borderRadius: 'var(--radius-md)',
+                                                fontWeight: 500,
+                                                cursor: 'pointer',
+                                                minWidth: '180px'
+                                            }}
+                                        >
+                                            {statusOptions.map(status => (
+                                                <option key={status} value={status} style={{ backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }}>
+                                                    {status}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    )}
+                                </div>
                             </div>
-                        </div>
                         );
                     })}
                 </div>

@@ -3,7 +3,9 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { supabase } from './lib/supabase';
 import Sidebar from './components/Sidebar';
 import Companies from './pages/Companies';
+import CompanyDetails from './pages/CompanyDetails';
 import Employees from './pages/Employees';
+import WaitingStaff from './pages/WaitingStaff';
 import Menu from './pages/Menu';
 import Orders from './pages/Orders';
 import Login from './pages/Login';
@@ -16,7 +18,7 @@ const Dashboard = () => {
       <header className="page-header">
         <div className="page-title">
           <h1>Dashboard</h1>
-          <p>Welcome to Savour Admin</p>
+          <p>Welcome to Savor Admin Dashboard</p>
         </div>
       </header>
       <div className="stats-grid">
@@ -40,14 +42,14 @@ const Dashboard = () => {
 function App() {
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
     // Initialize session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session) {
-        checkSuperAdmin(session.user.id);
+        fetchUserRole(session.user.id);
       } else {
         setLoading(false);
       }
@@ -57,9 +59,9 @@ function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       if (session) {
-        checkSuperAdmin(session.user.id);
+        fetchUserRole(session.user.id);
       } else {
-        setIsSuperAdmin(false);
+        setUserRole(null);
         setLoading(false);
       }
     });
@@ -67,24 +69,24 @@ function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  const checkSuperAdmin = async (userId: string) => {
+  const fetchUserRole = async (userId: string) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('is_super_admin')
+        .select('role')
         .eq('id', userId)
         .single();
 
-      if (error || !data?.is_super_admin) {
-        console.warn('Unauthorized access attempt: User is not a superadmin');
+      if (error || !data) {
+        console.warn('Unauthorized access: Role not found');
         await supabase.auth.signOut();
-        setIsSuperAdmin(false);
+        setUserRole(null);
       } else {
-        setIsSuperAdmin(true);
+        setUserRole(data.role);
       }
     } catch (err) {
-      console.error('Error checking superadmin status:', err);
-      setIsSuperAdmin(false);
+      console.error('Error fetching user role:', err);
+      setUserRole(null);
     } finally {
       setLoading(false);
     }
@@ -108,18 +110,20 @@ function App() {
     <Router>
       <Routes>
         <Route path="/login" element={
-          session && isSuperAdmin ? <Navigate to="/" replace /> : <Login />
+          session && userRole ? <Navigate to="/" replace /> : <Login />
         } />
         <Route path="/*" element={
-          session && isSuperAdmin ? (
+          session && userRole ? (
             <div className="app-container">
-              <Sidebar />
+              <Sidebar role={userRole} />
               <main className="main-content">
                 <Routes>
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/orders" element={<Orders />} />
-                  <Route path="/companies" element={<Companies />} />
+                  <Route path="/companies" element={<Companies role={userRole} />} />
+                  <Route path="/companies/:id" element={<CompanyDetails role={userRole} />} />
                   <Route path="/employees" element={<Employees />} />
+                  <Route path="/waiting-staff" element={<WaitingStaff />} />
                   <Route path="/menu" element={<Menu />} />
                   <Route path="/settings" element={<div className="page-container"><h1>Settings</h1></div>} />
                   <Route path="*" element={<Navigate to="/" replace />} />

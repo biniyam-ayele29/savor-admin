@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Plus, Search, Building2, MapPin, Mail, Phone, X, Loader2, Trash2, Edit2, Shield, UserPlus, UserMinus } from 'lucide-react';
+import { Plus, Search, Building2, MapPin, Mail, Phone, X, Loader2, Trash2, Edit2 } from 'lucide-react';
 import ImageUpload from '../components/ImageUpload';
 
 interface Company {
@@ -13,13 +14,14 @@ interface Company {
     is_active: boolean;
 }
 
-interface CompanyAdmin {
-    user_id: string;
-    email: string;
-    created_at: string;
+
+
+interface CompaniesProps {
+    role?: string | null;
 }
 
-const Companies = () => {
+const Companies = ({ role }: CompaniesProps) => {
+    const navigate = useNavigate();
     const [companies, setCompanies] = useState<Company[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -34,14 +36,6 @@ const Companies = () => {
         logo_url: '',
         is_active: true
     });
-
-    // Admin Management State
-    const [showAdminModal, setShowAdminModal] = useState(false);
-    const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
-    const [admins, setAdmins] = useState<CompanyAdmin[]>([]);
-    const [loadingAdmins, setLoadingAdmins] = useState(false);
-    const [creatingAdmin, setCreatingAdmin] = useState(false);
-    const [adminFormData, setAdminFormData] = useState({ email: '', password: '' });
 
     // Delete Confirmation State
     const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -69,60 +63,7 @@ const Companies = () => {
         }
     };
 
-    const fetchAdmins = async (companyId: string) => {
-        try {
-            setLoadingAdmins(true);
-            const { data, error } = await supabase.rpc('get_company_admins', { p_company_id: companyId });
-            if (error) throw error;
-            setAdmins(data || []);
-        } catch (error) {
-            console.error('Error fetching admins:', error);
-        } finally {
-            setLoadingAdmins(false);
-        }
-    };
 
-    const handleOpenAdmins = (company: Company) => {
-        setSelectedCompany(company);
-        setShowAdminModal(true);
-        setAdmins([]);
-        fetchAdmins(company.id);
-    };
-
-    const handleCreateAdmin = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!selectedCompany) return;
-        try {
-            setCreatingAdmin(true);
-            const { data, error } = await supabase.rpc('create_company_admin', {
-                p_email: adminFormData.email,
-                p_password: adminFormData.password,
-                p_company_id: selectedCompany.id
-            });
-            if (error) throw error;
-            alert('Admin created successfully!');
-            setAdminFormData({ email: '', password: '' });
-            fetchAdmins(selectedCompany.id);
-        } catch (error) {
-            alert('Error creating admin: ' + (error as any).message);
-        } finally {
-            setCreatingAdmin(false);
-        }
-    };
-
-    const handleRemoveAdmin = async (userId: string) => {
-        if (!selectedCompany || !confirm('Are you sure you want to remove this admin?')) return;
-        try {
-            const { error } = await supabase.rpc('remove_company_admin', {
-                p_user_id: userId,
-                p_company_id: selectedCompany.id
-            });
-            if (error) throw error;
-            fetchAdmins(selectedCompany.id);
-        } catch (error) {
-            alert('Error removing admin: ' + (error as any).message);
-        }
-    };
 
     const resetForm = () => {
         setFormData({
@@ -218,9 +159,11 @@ const Companies = () => {
                     <h1>Companies</h1>
                     <p>Manage office locations and branding</p>
                 </div>
-                <button onClick={() => { resetForm(); setShowModal(true); }} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Plus size={18} /> Add Company
-                </button>
+                {role === 'super_admin' && (
+                    <button onClick={() => { resetForm(); setShowModal(true); }} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <Plus size={18} /> Add Company
+                    </button>
+                )}
             </header>
 
             <div className="card" style={{ marginBottom: '2rem', padding: '1rem' }}>
@@ -248,82 +191,81 @@ const Companies = () => {
                 <div className="grid-list">
                     {filteredCompanies.map(company => (
                         <div key={company.id} className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', position: 'relative' }}>
-                            <div style={{ position: 'absolute', top: '1rem', right: '1rem', display: 'flex', gap: '0.5rem' }}>
-                                <button
-                                    onClick={() => handleOpenAdmins(company)}
-                                    className="btn-secondary"
-                                    style={{ padding: '0.4rem', border: 'none', background: 'rgba(255,255,255,0.05)', color: 'var(--primary)' }}
-                                    title="Manage Admins"
-                                >
-                                    <Shield size={16} />
-                                </button>
-                                <button
-                                    onClick={() => handleEdit(company)}
-                                    className="btn-secondary"
-                                    style={{ padding: '0.4rem', border: 'none', background: 'rgba(255,255,255,0.05)' }}
-                                    title="Edit"
-                                >
-                                    <Edit2 size={16} />
-                                </button>
-                                <button
-                                    onClick={() => handleDeleteClick(company)}
-                                    className="btn-secondary"
-                                    style={{ padding: '0.4rem', border: 'none', background: 'rgba(255,255,255,0.05)', color: '#ef4444' }}
-                                    title="Delete"
-                                >
-                                    <Trash2 size={16} />
-                                </button>
-                            </div>
+                            {role === 'super_admin' && (
+                                <div style={{ position: 'absolute', top: '1rem', right: '1rem', display: 'flex', gap: '0.5rem', zIndex: 10 }}>
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); handleEdit(company); }}
+                                        className="btn-secondary"
+                                        style={{ padding: '0.4rem', border: 'none', background: 'rgba(255,255,255,0.05)' }}
+                                        title="Edit"
+                                    >
+                                        <Edit2 size={16} />
+                                    </button>
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); handleDeleteClick(company); }}
+                                        className="btn-secondary"
+                                        style={{ padding: '0.4rem', border: 'none', background: 'rgba(255,255,255,0.05)', color: '#ef4444' }}
+                                        title="Delete"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+                                </div>
+                            )}
 
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                    <div style={{
-                                        width: '60px',
-                                        height: '60px',
-                                        background: 'var(--bg-sub)',
-                                        borderRadius: '12px',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        overflow: 'hidden',
-                                        border: '1px solid var(--border)'
-                                    }}>
-                                        {company.logo_url ? (
-                                            <img src={company.logo_url} alt={company.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                                        ) : (
-                                            <Building2 size={32} color="var(--primary)" />
-                                        )}
-                                    </div>
-                                    <div style={{ paddingRight: '4rem' }}>
-                                        <h3 style={{ fontSize: '1.25rem' }}>{company.name}</h3>
+                            <div
+                                onClick={() => navigate(`/companies/${company.id}`)}
+                                style={{ cursor: 'pointer' }}
+                            >
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                        <div style={{
+                                            width: '60px',
+                                            height: '60px',
+                                            background: 'var(--bg-sub)',
+                                            borderRadius: '12px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            overflow: 'hidden',
+                                            border: '1px solid var(--border)'
+                                        }}>
+                                            {company.logo_url ? (
+                                                <img src={company.logo_url} alt={company.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                            ) : (
+                                                <Building2 size={32} color="var(--primary)" />
+                                            )}
+                                        </div>
+                                        <div style={{ paddingRight: '4rem' }}>
+                                            <h3 style={{ fontSize: '1.25rem' }}>{company.name}</h3>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', borderTop: '1px solid var(--border)', paddingTop: '1rem' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.875rem' }}>
-                                    <MapPin size={16} color="var(--text-muted)" /> Floor {company.floor_number}
-                                </div>
-                                {company.contact_email && (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', borderTop: '1px solid var(--border)', paddingTop: '1rem' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.875rem' }}>
-                                        <Mail size={16} color="var(--text-muted)" /> {company.contact_email}
+                                        <MapPin size={16} color="var(--text-muted)" /> Floor {company.floor_number}
                                     </div>
-                                )}
-                                {company.contact_phone && (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.875rem' }}>
-                                        <Phone size={16} color="var(--text-muted)" /> {company.contact_phone}
+                                    {company.contact_email && (
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.875rem' }}>
+                                            <Mail size={16} color="var(--text-muted)" /> {company.contact_email}
+                                        </div>
+                                    )}
+                                    {company.contact_phone && (
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.875rem' }}>
+                                            <Phone size={16} color="var(--text-muted)" /> {company.contact_phone}
+                                        </div>
+                                    )}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.75rem', marginTop: '0.25rem' }}>
+                                        <span style={{
+                                            backgroundColor: company.is_active ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                                            color: company.is_active ? '#22c55e' : '#ef4444',
+                                            padding: '0.2rem 0.6rem',
+                                            borderRadius: '9999px',
+                                            fontWeight: 600
+                                        }}>
+                                            {company.is_active ? 'Active' : 'Inactive'}
+                                        </span>
                                     </div>
-                                )}
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.75rem', marginTop: '0.25rem' }}>
-                                    <span style={{
-                                        backgroundColor: company.is_active ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                                        color: company.is_active ? '#22c55e' : '#ef4444',
-                                        padding: '0.2rem 0.6rem',
-                                        borderRadius: '9999px',
-                                        fontWeight: 600
-                                    }}>
-                                        {company.is_active ? 'Active' : 'Inactive'}
-                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -350,18 +292,18 @@ const Companies = () => {
 
                             <div>
                                 <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500 }}>Floor Number</label>
-                                <input 
-                                    required 
-                                    type="number" 
+                                <input
+                                    required
+                                    type="number"
                                     min={0}
-                                    value={formData.floor_number} 
+                                    value={formData.floor_number}
                                     onChange={e => {
                                         const value = parseInt(e.target.value);
                                         if (!isNaN(value)) {
                                             setFormData({ ...formData, floor_number: value });
                                         }
-                                    }} 
-                                    placeholder="1" 
+                                    }}
+                                    placeholder="1"
                                 />
                             </div>
 
@@ -404,91 +346,7 @@ const Companies = () => {
                 </div>
             )}
 
-            {showAdminModal && selectedCompany && (
-                <div style={{
-                    position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
-                    backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    backdropFilter: 'blur(4px)', zIndex: 1000
-                }}>
-                    <div className="card" style={{ width: '100%', maxWidth: '700px', padding: '2.5rem', position: 'relative', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
-                        <button onClick={() => setShowAdminModal(false)} style={{ position: 'absolute', top: '1rem', right: '1rem', border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
-                            <X size={24} />
-                        </button>
 
-                        <div style={{ marginBottom: '2rem' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-                                <Shield color="var(--primary)" size={24} />
-                                <h2 style={{ fontSize: '1.5rem' }}>Manage Admins: {selectedCompany.name}</h2>
-                            </div>
-                            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Admins can manage employees, menus, and orders for this company.</p>
-                        </div>
-
-                        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '2.5rem', overflowY: 'auto' }}>
-                            {/* Admin List */}
-                            <div>
-                                <h3 style={{ fontSize: '1rem', marginBottom: '1rem', fontWeight: 600 }}>Current Admins</h3>
-                                {loadingAdmins ? (
-                                    <div style={{ padding: '1rem', textAlign: 'center' }}><Loader2 className="animate-spin" size={24} /></div>
-                                ) : admins.length === 0 ? (
-                                    <div style={{ padding: '2rem', textAlign: 'center', border: '1px dashed var(--border)', borderRadius: '12px' }}>
-                                        <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>No admins assigned.</p>
-                                    </div>
-                                ) : (
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                                        {admins.map(admin => (
-                                            <div key={admin.user_id} style={{
-                                                padding: '1rem', background: 'var(--bg-sub)', borderRadius: '12px', border: '1px solid var(--border)',
-                                                display: 'flex', justifyContent: 'space-between', alignItems: 'center'
-                                            }}>
-                                                <div style={{ overflow: 'hidden' }}>
-                                                    <p style={{ fontWeight: 600, fontSize: '0.875rem', textOverflow: 'ellipsis', overflow: 'hidden' }}>{admin.email}</p>
-                                                    <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Joined {new Date(admin.created_at).toLocaleDateString()}</p>
-                                                </div>
-                                                <button onClick={() => handleRemoveAdmin(admin.user_id)} style={{ color: '#ef4444', background: 'none', border: 'none', padding: '0.5rem' }}>
-                                                    <UserMinus size={16} />
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Create Form */}
-                            <div>
-                                <h3 style={{ fontSize: '1rem', marginBottom: '1rem', fontWeight: 600 }}>Add New Admin</h3>
-                                <form onSubmit={handleCreateAdmin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                    <div>
-                                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Email Address</label>
-                                        <input
-                                            required
-                                            type="email"
-                                            value={adminFormData.email}
-                                            onChange={e => setAdminFormData({ ...adminFormData, email: e.target.value })}
-                                            placeholder="admin@example.com"
-                                            style={{ fontSize: '0.875rem' }}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Password</label>
-                                        <input
-                                            required
-                                            type="password"
-                                            value={adminFormData.password}
-                                            onChange={e => setAdminFormData({ ...adminFormData, password: e.target.value })}
-                                            placeholder="••••••••"
-                                            style={{ fontSize: '0.875rem' }}
-                                        />
-                                    </div>
-                                    <button disabled={creatingAdmin} type="submit" className="btn-primary" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
-                                        {creatingAdmin ? <Loader2 className="animate-spin" size={18} /> : <UserPlus size={18} />}
-                                        {creatingAdmin ? 'Creating...' : 'Create Admin Account'}
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
 
             {/* Delete Confirmation Modal */}
             {showDeleteModal && companyToDelete && (
@@ -519,9 +377,9 @@ const Companies = () => {
                             Are you sure you want to delete <strong style={{ color: 'var(--text-main)' }}>{companyToDelete.name}</strong>?
                         </p>
 
-                        <p style={{ 
-                            color: '#dc2626', 
-                            fontSize: '0.8rem', 
+                        <p style={{
+                            color: '#dc2626',
+                            fontSize: '0.8rem',
                             marginBottom: '1.5rem',
                             padding: '0.75rem',
                             backgroundColor: '#fef2f2',
@@ -587,4 +445,3 @@ const Companies = () => {
 };
 
 export default Companies;
-

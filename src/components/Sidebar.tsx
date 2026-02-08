@@ -2,15 +2,22 @@ import { NavLink } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Users, Utensils, LayoutDashboard, Settings, LogOut, Building2, ShoppingBag } from 'lucide-react';
 
-const Sidebar = () => {
-    const navItems = [
-        { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
-        { icon: ShoppingBag, label: 'Orders', path: '/orders' },
-        { icon: Building2, label: 'Companies', path: '/companies' },
-        { icon: Users, label: 'Employees', path: '/employees' },
-        { icon: Utensils, label: 'Menu', path: '/menu' },
-        { icon: Settings, label: 'Settings', path: '/settings' },
+interface SidebarProps {
+    role: string | null;
+}
+
+const Sidebar = ({ role }: SidebarProps) => {
+    const allNavItems = [
+        { icon: LayoutDashboard, label: 'Dashboard', path: '/', roles: ['super_admin', 'admin', 'default'] },
+        { icon: ShoppingBag, label: 'Orders', path: '/orders', roles: ['super_admin', 'admin', 'default'] },
+        { icon: Building2, label: 'Companies', path: '/companies', roles: ['super_admin'] },
+        { icon: Users, label: 'Clients', path: '/employees', roles: ['super_admin', 'admin'] },
+        { icon: Users, label: 'Waiting Staff', path: '/waiting-staff', roles: ['super_admin', 'admin'] },
+        { icon: Utensils, label: 'Menu', path: '/menu', roles: ['super_admin', 'admin'] },
+        { icon: Settings, label: 'Settings', path: '/settings', roles: ['super_admin', 'admin'] },
     ];
+
+    const navItems = allNavItems.filter(item => item.roles.includes(role || 'default'));
 
     const handleLogout = async () => {
         const { error } = await supabase.auth.signOut();
