@@ -7,7 +7,6 @@ interface Employee {
     name: string;
     email: string;
     phone: string | null;
-    position: string | null;
     company_id: string;
     avatar_url: string | null;
     is_active: boolean;
@@ -31,7 +30,6 @@ const CompanyEmployees = ({ companyId, companyName }: CompanyEmployeesProps) => 
         name: '',
         email: '',
         phone: '',
-        position: '',
         company_id: companyId,
         avatar_url: '',
         is_active: true
@@ -70,7 +68,6 @@ const CompanyEmployees = ({ companyId, companyName }: CompanyEmployeesProps) => 
             name: '',
             email: '',
             phone: '',
-            position: '',
             company_id: companyId,
             avatar_url: '',
             is_active: true
@@ -83,7 +80,6 @@ const CompanyEmployees = ({ companyId, companyName }: CompanyEmployeesProps) => 
             name: employee.name,
             email: employee.email,
             phone: employee.phone || '',
-            position: employee.position || '',
             company_id: employee.company_id,
             avatar_url: employee.avatar_url || '',
             is_active: employee.is_active
@@ -213,7 +209,6 @@ const CompanyEmployees = ({ companyId, companyName }: CompanyEmployeesProps) => 
                                     </div>
                                     <div style={{ paddingRight: '4rem' }}>
                                         <h3 style={{ fontSize: '1.125rem' }}>{employee.name}</h3>
-                                        <p style={{ color: 'var(--primary)', fontSize: '0.875rem', fontWeight: 600 }}>{employee.position || 'Staff'}</p>
                                     </div>
                                 </div>
                             </div>
@@ -268,34 +263,9 @@ const CompanyEmployees = ({ companyId, companyName }: CompanyEmployeesProps) => 
                                 <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500 }}>Email Address</label>
                                 <input required type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} placeholder="john@company.com" />
                             </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                                <div>
-                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500 }}>Phone Number</label>
-                                    <input value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} placeholder="+251 ..." />
-                                </div>
-                                <div>
-                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500 }}>Position</label>
-                                    <select
-                                        value={formData.position}
-                                        onChange={e => setFormData({ ...formData, position: e.target.value })}
-                                        style={{
-                                            width: '100%',
-                                            padding: '0.625rem',
-                                            fontSize: '0.875rem',
-                                            border: '1px solid var(--border)',
-                                            borderRadius: 'var(--radius-md)',
-                                            backgroundColor: 'var(--bg-card)',
-                                            color: 'var(--text-main)',
-                                        }}
-                                    >
-                                        <option value="">Select Position</option>
-                                        <option value="Waiter">Waiter</option>
-                                        <option value="Manager">Manager</option>
-                                        <option value="Chef">Chef</option>
-                                        <option value="Bartender">Bartender</option>
-                                        <option value="Other">Other</option>
-                                    </select>
-                                </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500 }}>Phone Number</label>
+                                <input value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} placeholder="+251 ..." />
                             </div>
                             <div>
                                 <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500 }}>Avatar URL</label>

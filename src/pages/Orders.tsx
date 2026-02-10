@@ -13,6 +13,7 @@ interface Order {
     waiting_staff_id: string | null;
     created_at: string;
     updated_at: string;
+    employees?: { name: string };
 }
 
 interface Company {
@@ -38,6 +39,27 @@ const Orders = () => {
     useEffect(() => {
         fetchOrders();
         fetchSupportData();
+
+        // Subscribe to realtime updates for the orders table
+        const channel = supabase
+            .channel('orders-realtime-ui')
+            .on(
+                'postgres_changes',
+                {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'orders',
+                },
+                () => {
+                    console.log('New order detected, refreshing UI...');
+                    fetchOrders();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, []);
 
     const fetchOrders = async () => {
@@ -45,7 +67,7 @@ const Orders = () => {
             setLoading(true);
             const { data, error } = await supabase
                 .from('orders')
-                .select('*')
+                .select('*, employees(name)')
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
@@ -300,7 +322,17 @@ const Orders = () => {
 
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', borderTop: '1px solid var(--border)', paddingTop: '1rem' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.875rem' }}>
-                                        <Building2 size={16} color="var(--primary)" /> {order.company_id ? (companies[order.company_id] || 'Unknown Company') : 'No Company'}
+                                        <Building2 size={16} color="var(--primary)" />
+                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                            <span style={{ fontWeight: 600 }}>
+                                                {order.company_id ? (companies[order.company_id] || 'Unknown Company') : 'No Company'}
+                                            </span>
+                                            {order.employees?.name && (
+                                                <span style={{ fontSize: '0.75rem', color: 'var(--text-sub)' }}>
+                                                    {order.employees.name}
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.875rem' }}>
                                         <ShoppingBag size={16} color="var(--text-muted)" />

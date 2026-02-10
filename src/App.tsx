@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { supabase } from './lib/supabase';
 import Sidebar from './components/Sidebar';
+import { ThemeProvider } from './components/ThemeProvider';
+import { NotificationProvider } from './components/NotificationProvider';
 import Companies from './pages/Companies';
 import CompanyDetails from './pages/CompanyDetails';
 import Employees from './pages/Employees';
@@ -107,35 +109,39 @@ function App() {
   }
 
   return (
-    <Router>
-      <Routes>
-        <Route path="/login" element={
-          session && userRole ? <Navigate to="/" replace /> : <Login />
-        } />
-        <Route path="/*" element={
-          session && userRole ? (
-            <div className="app-container">
-              <Sidebar role={userRole} />
-              <main className="main-content">
-                <Routes>
-                  <Route path="/" element={<Dashboard />} />
-                  <Route path="/orders" element={<Orders />} />
-                  <Route path="/companies" element={<Companies role={userRole} />} />
-                  <Route path="/companies/:id" element={<CompanyDetails role={userRole} />} />
-                  <Route path="/employees" element={<Employees />} />
-                  <Route path="/waiting-staff" element={<WaitingStaff />} />
-                  <Route path="/menu" element={<Menu />} />
-                  <Route path="/settings" element={<div className="page-container"><h1>Settings</h1></div>} />
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
-              </main>
-            </div>
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        } />
-      </Routes>
-    </Router>
+    <ThemeProvider>
+      <NotificationProvider>
+        <Router>
+          <Routes>
+            <Route path="/login" element={
+              session && userRole ? <Navigate to="/" replace /> : <Login />
+            } />
+            <Route path="/*" element={
+              session && userRole ? (
+                <div className="app-container">
+                  <Sidebar role={userRole} />
+                  <main className="main-content">
+                    <Routes>
+                      <Route path="/" element={<Dashboard />} />
+                      <Route path="/orders" element={<Orders />} />
+                      <Route path="/companies" element={<Companies role={userRole} />} />
+                      <Route path="/companies/:id" element={<CompanyDetails role={userRole} />} />
+                      <Route path="/employees" element={<Employees />} />
+                      <Route path="/waiting-staff" element={<WaitingStaff />} />
+                      <Route path="/menu" element={<Menu />} />
+                      <Route path="/settings" element={<div className="page-container"><h1>Settings</h1></div>} />
+                      <Route path="*" element={<Navigate to="/" replace />} />
+                    </Routes>
+                  </main>
+                </div>
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            } />
+          </Routes>
+        </Router>
+      </NotificationProvider>
+    </ThemeProvider>
   );
 }
 

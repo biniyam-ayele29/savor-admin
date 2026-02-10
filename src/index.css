@@ -1,20 +1,21 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap');
 
 :root {
-  --primary: #f97316;
-  --primary-hover: #ea580c;
-  --secondary: #64748b;
-  --accent: #8b5cf6;
+  /* Savor Brand Colors - from logo */
+  --primary: #E68B2C;
+  --primary-hover: #D97706;
+  --secondary: #7FA14B;
+  --accent: #3B2415;
 
   --bg-main: #ffffff;
-  --bg-sub: #f8fafc;
+  --bg-sub: #FAFAF9;
   --bg-card: #ffffff;
 
-  --text-main: #0f172a;
-  --text-sub: #475569;
-  --text-muted: #94a3b8;
+  --text-main: #1C1917;
+  --text-sub: #78716C;
+  --text-muted: #A8A29E;
 
-  --border: #e2e8f0;
+  --border: #E7E5E4;
   --radius-sm: 0.5rem;
   --radius-md: 0.75rem;
   --radius-lg: 1rem;
@@ -24,18 +25,16 @@
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg-main: #020617;
-    --bg-sub: #0f172a;
-    --bg-card: #1e293b;
+:root.dark {
+  --bg-main: #1C1917;
+  --bg-sub: #292524;
+  --bg-card: #44403C;
 
-    --text-main: #f8fafc;
-    --text-sub: #cbd5e1;
-    --text-muted: #64748b;
+  --text-main: #FAFAF9;
+  --text-sub: #E7E5E4;
+  --text-muted: #A8A29E;
 
-    --border: #334155;
-  }
+  --border: #57534E;
 }
 
 * {
@@ -54,7 +53,7 @@ h4,
 }
 
 body {
-  background-color: white;
+  background-color: var(--bg-main);
   color: var(--text-main);
   transition: background-color 0.3s ease, color 0.3s ease;
   min-height: 100vh;
@@ -111,7 +110,7 @@ select {
 
 input:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
+  box-shadow: 0 0 0 3px rgba(230, 139, 44, 0.1);
 }
 
 /* Layout */
@@ -176,7 +175,7 @@ input:focus {
 }
 
 .nav-link.active {
-  background-color: rgba(249, 115, 22, 0.1);
+  background-color: rgba(230, 139, 44, 0.1);
   color: var(--primary);
 }
 

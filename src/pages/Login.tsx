@@ -61,7 +61,7 @@ const Login = () => {
                 left: '-10%',
                 width: '40%',
                 height: '40%',
-                background: 'radial-gradient(circle, rgba(249, 115, 22, 0.15) 0%, transparent 70%)',
+                background: 'radial-gradient(circle, rgba(230, 139, 44, 0.15) 0%, transparent 70%)',
                 filter: 'blur(60px)',
                 zIndex: 0
             }} />
@@ -71,7 +71,7 @@ const Login = () => {
                 right: '-10%',
                 width: '40%',
                 height: '40%',
-                background: 'radial-gradient(circle, rgba(239, 68, 68, 0.1) 0%, transparent 70%)',
+                background: 'radial-gradient(circle, rgba(127, 161, 75, 0.1) 0%, transparent 70%)',
                 filter: 'blur(60px)',
                 zIndex: 0
             }} />
@@ -94,7 +94,7 @@ const Login = () => {
                         alignItems: 'center',
                         justifyContent: 'center',
                         margin: '0 auto 1.5rem',
-                        boxShadow: '0 10px 20px -5px rgba(249, 115, 22, 0.4)'
+                        boxShadow: '0 10px 20px -5px rgba(230, 139, 44, 0.4)'
                     }}>
                         <ShieldCheck size={32} color="white" />
                     </div>

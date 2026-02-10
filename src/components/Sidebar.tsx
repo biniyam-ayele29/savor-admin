@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Users, Utensils, LayoutDashboard, Settings, LogOut, Building2, ShoppingBag } from 'lucide-react';
+import ThemeToggle from './ThemeToggle';
 
 interface SidebarProps {
     role: string | null;
@@ -27,7 +28,25 @@ const Sidebar = ({ role }: SidebarProps) => {
     return (
         <aside className="sidebar">
             <div className="sidebar-brand">
-                <h2 className="brand">SAVOUR</h2>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+                    <img
+                        src="/savor-logo.png"
+                        alt="Savor Logo"
+                        style={{
+                            height: '48px',
+                            width: 'auto',
+                            objectFit: 'contain'
+                        }}
+                    />
+                </div>
+                <p style={{
+                    fontSize: '0.75rem',
+                    color: 'var(--text-muted)',
+                    fontWeight: 600,
+                    textTransform: 'uppercase',
+                    letterSpacing: '1px',
+                    marginTop: '4px'
+                }}>Admin Portal</p>
             </div>
             <nav className="sidebar-nav">
                 {navItems.map((item) => (
@@ -42,6 +61,7 @@ const Sidebar = ({ role }: SidebarProps) => {
                 ))}
             </nav>
             <div className="sidebar-footer">
+                <ThemeToggle />
                 <button onClick={handleLogout} className="nav-link logout-btn" style={{ width: '100%', border: 'none', background: 'none' }}>
                     <LogOut size={20} />
                     <span>Logout</span>
