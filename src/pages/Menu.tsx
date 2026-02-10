@@ -228,7 +228,7 @@ const Menu = () => {
                                             justifyContent: 'center',
                                             cursor: 'pointer',
                                             boxShadow: 'var(--shadow-md)',
-                                            color: item.available ? '#22c55e' : '#ef4444'
+                                            color: item.available ? '#7FA14B' : '#ef4444'
                                         }}
                                     >
                                         {item.available ? <CheckCircle size={22} /> : <XCircle size={22} />}

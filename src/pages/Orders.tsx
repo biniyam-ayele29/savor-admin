@@ -121,20 +121,20 @@ const Orders = () => {
             case 'pending_confirmation':
             case 'pending':
             case 'confirmed':
-                return { bg: '#fef3c7', text: '#92400e' }; // Amber
+                return { bg: '#fff7ed', text: '#E68B2C' }; // Savor Orange
             case 'being prepared':
             case 'being prepared/cooking':
-                return { bg: '#dbeafe', text: '#1e40af' }; // Blue
+                return { bg: '#fffbeb', text: '#D97706' }; // Savor Orange Dark
             case 'ready for pickup':
-                return { bg: '#fef9c3', text: '#854d0e' }; // Yellow
+                return { bg: '#fef3c7', text: '#B45309' }; // Savor Orange Darker
             case 'out for delivery':
             case 'out for delivery/picked up':
-                return { bg: '#ede9fe', text: '#5b21b6' }; // Purple
+                return { bg: '#fef9c3', text: '#92520a' }; // Orange Brown
             case 'delivered/completed':
             case 'delivered':
-                return { bg: '#d1fae5', text: '#065f46' }; // Green
+                return { bg: '#f0fdf4', text: '#7FA14B' }; // Savor Green
             default:
-                return { bg: '#f3f4f6', text: '#374151' }; // Gray
+                return { bg: '#fafaf9', text: '#78716c' }; // Neutral
         }
     };
 
@@ -391,7 +391,7 @@ const Orders = () => {
                                         ETB {order.total_price.toFixed(2)}
                                     </div>
                                     {isDelivered(order.status) ? (
-                                        <CheckCircle2 size={24} color="#10b981" />
+                                        <CheckCircle2 size={24} color="#7FA14B" />
                                     ) : (
                                         <select
                                             value={order.status}

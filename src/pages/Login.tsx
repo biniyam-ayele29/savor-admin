@@ -49,7 +49,7 @@ const Login = () => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            background: 'linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%)',
+            background: 'linear-gradient(135deg, #3B2415 0%, #2a1a0f 100%)',
             position: 'relative',
             overflow: 'hidden',
             padding: '2rem'

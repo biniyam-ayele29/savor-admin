@@ -33,18 +33,19 @@ const Sidebar = ({ role }: SidebarProps) => {
                         src="/savor-logo.png"
                         alt="Savor Logo"
                         style={{
-                            height: '48px',
-                            width: 'auto',
-                            objectFit: 'contain'
+                            height: '120px',
+                            width: '120px',
+                            objectFit: 'contain',
+                            borderRadius: '25%'
                         }}
                     />
                 </div>
                 <p style={{
                     fontSize: '0.75rem',
-                    color: 'var(--text-muted)',
-                    fontWeight: 600,
+                    color: 'var(--secondary)',
+                    fontWeight: 700,
                     textTransform: 'uppercase',
-                    letterSpacing: '1px',
+                    letterSpacing: '1.5px',
                     marginTop: '4px'
                 }}>Admin Portal</p>
             </div>

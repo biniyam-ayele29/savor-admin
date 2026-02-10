@@ -26,15 +26,15 @@
 }
 
 :root.dark {
-  --bg-main: #1C1917;
-  --bg-sub: #292524;
-  --bg-card: #44403C;
+  --bg-main: #0f0d0a;
+  --bg-sub: #1a1410;
+  --bg-card: #252119;
 
   --text-main: #FAFAF9;
   --text-sub: #E7E5E4;
-  --text-muted: #A8A29E;
+  --text-muted: #D6D3D1;
 
-  --border: #57534E;
+  --border: #3B2415;
 }
 
 * {

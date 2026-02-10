@@ -257,8 +257,8 @@ const Companies = ({ role }: CompaniesProps) => {
                                     )}
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.75rem', marginTop: '0.25rem' }}>
                                         <span style={{
-                                            backgroundColor: company.is_active ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                                            color: company.is_active ? '#22c55e' : '#ef4444',
+                                            backgroundColor: company.is_active ? 'rgba(127, 161, 75, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                                            color: company.is_active ? '#7FA14B' : '#ef4444',
                                             padding: '0.2rem 0.6rem',
                                             borderRadius: '9999px',
                                             fontWeight: 600
