@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { supabase } from './lib/supabase';
 import Sidebar from './components/Sidebar';
+import Navbar from './components/Navbar';
 import { ThemeProvider } from './components/ThemeProvider';
 import { NotificationProvider } from './components/NotificationProvider';
+import Dashboard from './pages/Dashboard';
 import Companies from './pages/Companies';
 import CompanyDetails from './pages/CompanyDetails';
 import Employees from './pages/Employees';
@@ -13,33 +15,6 @@ import Orders from './pages/Orders';
 import Login from './pages/Login';
 import { Loader2 } from 'lucide-react';
 import './index.css';
-
-const Dashboard = () => {
-  return (
-    <div className="page-container">
-      <header className="page-header">
-        <div className="page-title">
-          <h1>Dashboard</h1>
-          <p>Welcome to Savor Admin Dashboard</p>
-        </div>
-      </header>
-      <div className="stats-grid">
-        <div className="card">
-          <h3 style={{ color: 'var(--text-sub)', fontSize: '0.875rem', fontWeight: 600 }}>Total Orders</h3>
-          <p style={{ fontSize: '2rem', fontWeight: 800, marginTop: '0.5rem' }}>1</p>
-        </div>
-        <div className="card">
-          <h3 style={{ color: 'var(--text-sub)', fontSize: '0.875rem', fontWeight: 600 }}>Menu Items</h3>
-          <p style={{ fontSize: '2rem', fontWeight: 800, marginTop: '0.5rem' }}>6</p>
-        </div>
-        <div className="card">
-          <h3 style={{ color: 'var(--text-sub)', fontSize: '0.875rem', fontWeight: 600 }}>Active Employees</h3>
-          <p style={{ fontSize: '2rem', fontWeight: 800, marginTop: '0.5rem' }}>9</p>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 function App() {
   const [session, setSession] = useState<any>(null);
@@ -120,19 +95,22 @@ function App() {
               session && userRole ? (
                 <div className="app-container">
                   <Sidebar role={userRole} />
-                  <main className="main-content">
-                    <Routes>
-                      <Route path="/" element={<Dashboard />} />
-                      <Route path="/orders" element={<Orders />} />
-                      <Route path="/companies" element={<Companies role={userRole} />} />
-                      <Route path="/companies/:id" element={<CompanyDetails role={userRole} />} />
-                      <Route path="/employees" element={<Employees />} />
-                      <Route path="/waiting-staff" element={<WaitingStaff />} />
-                      <Route path="/menu" element={<Menu />} />
-                      <Route path="/settings" element={<div className="page-container"><h1>Settings</h1></div>} />
-                      <Route path="*" element={<Navigate to="/" replace />} />
-                    </Routes>
-                  </main>
+                  <div className="main-wrapper">
+                    <Navbar />
+                    <main className="main-content">
+                      <Routes>
+                        <Route path="/" element={<Dashboard />} />
+                        <Route path="/orders" element={<Orders />} />
+                        <Route path="/companies" element={<Companies role={userRole} />} />
+                        <Route path="/companies/:id" element={<CompanyDetails role={userRole} />} />
+                        <Route path="/employees" element={<Employees />} />
+                        <Route path="/waiting-staff" element={<WaitingStaff />} />
+                        <Route path="/menu" element={<Menu />} />
+                        <Route path="/settings" element={<div className="page-container"><h1>Settings</h1></div>} />
+                        <Route path="*" element={<Navigate to="/" replace />} />
+                      </Routes>
+                    </main>
+                  </div>
                 </div>
               ) : (
                 <Navigate to="/login" replace />
